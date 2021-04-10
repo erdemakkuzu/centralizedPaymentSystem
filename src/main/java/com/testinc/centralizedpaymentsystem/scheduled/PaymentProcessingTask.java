@@ -1,7 +1,8 @@
 package com.testinc.centralizedpaymentsystem.scheduled;
 
 import com.testinc.centralizedpaymentsystem.configuration.ConsumerConfiguration;
-import com.testinc.centralizedpaymentsystem.consumer.PaymentConsumer;
+import com.testinc.centralizedpaymentsystem.consumer.OfflinePaymentConsumer;
+import com.testinc.centralizedpaymentsystem.consumer.OnlinePaymentConsumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -14,22 +15,18 @@ import java.util.Date;
 public class PaymentProcessingTask {
 
     @Autowired
-    ConsumerConfiguration consumerConfiguration;
+    OnlinePaymentConsumer onlinePaymentConsumer;
+
+    @Autowired
+    OfflinePaymentConsumer offlinePaymentConsumer;
 
     @Scheduled(fixedRateString = "${fixedDelay.in.milliseconds}")
     public void processOnlinePayments() {
-        PaymentConsumer onlinePaymentConsumer = new PaymentConsumer(
-                consumerConfiguration.getTopicNameForOnlinePayments(),
-                consumerConfiguration.getKafkaProducerHost(),
-                consumerConfiguration.getKafkaConsumerGroupName(),
-                consumerConfiguration.getConsumerReadingTimeOut(),
-                consumerConfiguration.getConsumerFetchSize());
-
         onlinePaymentConsumer.runConsumer();
     }
 
     @Scheduled(fixedRateString = "${fixedDelay.in.milliseconds}")
     public void processOfflinePayments() {
-        System.out.println(Thread.currentThread().getName() + " Task 2 executed at " + new Date());
+        offlinePaymentConsumer.runConsumer();
     }
 }

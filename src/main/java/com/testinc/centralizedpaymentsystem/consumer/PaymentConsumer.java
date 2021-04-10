@@ -2,26 +2,26 @@ package com.testinc.centralizedpaymentsystem.consumer;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.util.Collections;
 import java.util.Properties;
 
-public class PaymentConsumer {
+public abstract class PaymentConsumer {
 
-    private final long consumerReadTimeOutInterval;
-    private final Consumer<String, String> consumer;
 
-    public PaymentConsumer(String topic,
-                           String bootstrapServer,
-                           String groupId,
-                           long consumerReadTimeOutInterval,
-                           int fetchSize) {
+    protected  Consumer<String, String> consumer;
 
-        this.consumerReadTimeOutInterval = consumerReadTimeOutInterval;
+    public PaymentConsumer() {
 
+    }
+
+    public static Consumer<String, String> createConsumer(String topic,
+                                                          String bootstrapServer,
+                                                          String groupId,
+                                                          long consumerReadTimeOutInterval,
+                                                          int fetchSize){
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
                 bootstrapServer);
@@ -34,24 +34,14 @@ public class PaymentConsumer {
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG,
                 fetchSize);
 
-        consumer = new KafkaConsumer<>(props);
-        consumer.subscribe(Collections.singletonList(topic));
+        KafkaConsumer<String, String> kafkaConsumer =
+                new KafkaConsumer<>(props);
+        kafkaConsumer.subscribe(Collections.singletonList(topic));
 
+        return kafkaConsumer;
     }
 
-    public void runConsumer() {
-        final ConsumerRecords<String, String> consumerRecords =
-                consumer.poll(consumerReadTimeOutInterval);
 
-        consumerRecords.forEach(record -> {
-            System.out.printf("Consumer Record:(%s, %s, %d, %d)\n",
-                    record.key(), record.value(),
-                    record.partition(), record.offset());
-        });
+    public abstract void runConsumer();
 
-        consumer.commitAsync();
-
-        consumer.close();
-        System.out.println("DONE");
-    }
 }
