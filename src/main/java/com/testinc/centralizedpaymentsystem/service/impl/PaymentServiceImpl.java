@@ -13,6 +13,7 @@ import com.testinc.centralizedpaymentsystem.repository.LogHistoryRepository;
 import com.testinc.centralizedpaymentsystem.repository.PaymentsRepository;
 import com.testinc.centralizedpaymentsystem.service.PaymentService;
 import com.testinc.centralizedpaymentsystem.utils.AppUtils;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public void saveUnProcessedOnlinePayments(ConsumerRecords<String, String> consumerRecords) {
-        consumerRecords.forEach(record -> {
+
+        for(ConsumerRecord<String,String> record : consumerRecords){
             try {
                 PaymentDTO paymentDTO = mapper.readValue(record.value(), PaymentDTO.class);
                 Optional<Accounts> accountById = accountsRepository.findById(paymentDTO.getAccount_id());
@@ -91,7 +93,7 @@ public class PaymentServiceImpl implements PaymentService {
             } catch (JsonProcessingException e) {
                 logger.error(PaymentError.KAFKA_JSON_PARSING_ERROR.getErrorDescription(), e);
             }
-        });
+        }
     }
 
     private void logErrorToDatabase(String payment_id, String error, String errorDescription) {
@@ -199,23 +201,34 @@ public class PaymentServiceImpl implements PaymentService {
 
     private void updateInValidatedPayment(PaymentDTO paymentDTO) {
         Optional<Payments> invalidPayment = paymentsRepository.findById(paymentDTO.getPayment_id());
-        invalidPayment.get().setValid(false);
-        invalidPayment.get().setProcessed(true);
-        paymentsRepository.save(invalidPayment.get());
+        if (!invalidPayment.isPresent()) {
+            logger.error(PaymentError.PAYMENT_NOT_FOUND.getErrorDescription());
+        } else {
+            invalidPayment.get().setValid(false);
+            invalidPayment.get().setProcessed(true);
+            paymentsRepository.save(invalidPayment.get());
+        }
     }
 
     private void updateAccountsLastPaymentDate(PaymentDTO paymentDTO) {
         Optional<Accounts> accountToUpdate = accountsRepository.findById(paymentDTO.getAccount_id());
-        accountToUpdate.get().setLastPaymentDate(new Date());
-        accountsRepository.save(accountToUpdate.get());
+        if (!accountToUpdate.isPresent()) {
+            logger.error(PaymentError.ACCOUNT_NOT_FOUND.getErrorDescription());
+        } else {
+            accountToUpdate.get().setLastPaymentDate(new Date());
+            accountsRepository.save(accountToUpdate.get());
+        }
     }
 
     private void updateValidatedPayment(PaymentDTO paymentDTO) {
         Optional<Payments> validPayment = paymentsRepository.findById(paymentDTO.getPayment_id());
-        validPayment.get().setValid(true);
-        validPayment.get().setProcessed(true);
-        paymentsRepository.save(validPayment.get());
+        if (!validPayment.isPresent()) {
+            logger.error(PaymentError.PAYMENT_NOT_FOUND.getErrorDescription());
+        } else {
+            validPayment.get().setValid(true);
+            validPayment.get().setProcessed(true);
+            paymentsRepository.save(validPayment.get());
+        }
     }
-
 }
 

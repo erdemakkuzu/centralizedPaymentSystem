@@ -3,6 +3,7 @@ package com.testinc.centralizedpaymentsystem.entity;
 import lombok.Data;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 @Entity
 @Table(name = "log_history")
