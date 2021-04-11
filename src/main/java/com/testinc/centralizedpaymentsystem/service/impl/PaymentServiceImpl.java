@@ -13,7 +13,6 @@ import com.testinc.centralizedpaymentsystem.repository.LogHistoryRepository;
 import com.testinc.centralizedpaymentsystem.repository.PaymentsRepository;
 import com.testinc.centralizedpaymentsystem.service.PaymentService;
 import com.testinc.centralizedpaymentsystem.utils.AppUtils;
-import lombok.extern.log4j.Log4j;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,11 +71,17 @@ public class PaymentServiceImpl implements PaymentService {
             try {
                 PaymentDTO paymentDTO = mapper.readValue(record.value(), PaymentDTO.class);
                 Optional<Accounts> accountById = accountsRepository.findById(paymentDTO.getAccount_id());
+                Optional<Payments> paymentsForUniqueCheck = paymentsRepository.findById(paymentDTO.getPayment_id());
 
                 if (!accountById.isPresent()) {
                     logErrorToDatabase(paymentDTO.getPayment_id(),
                             PaymentError.ACCOUNT_NOT_FOUND.getError(),
                             PaymentError.ACCOUNT_NOT_FOUND.getErrorDescription());
+                } else if (paymentsForUniqueCheck.isPresent()) {
+                    logErrorToDatabase(paymentDTO.getPayment_id(),
+                            PaymentError.PAYMENT_ID_IS_NOT_UNIQUE.getError(),
+                            PaymentError.PAYMENT_ID_IS_NOT_UNIQUE.getErrorDescription());
+
                 } else {
                     Payments payments = AppUtils.onlinePaymentDTOToEntity(paymentDTO);
                     payments.setAccounts(accountById.get());
@@ -87,13 +92,6 @@ public class PaymentServiceImpl implements PaymentService {
                 logger.error(PaymentError.KAFKA_JSON_PARSING_ERROR.getErrorDescription(), e);
             }
         });
-    }
-
-
-
-    private void logErrorToExternalAPI(ErrorLog errorLog, RestTemplate restTemplate) {
-        restTemplate.
-                postForEntity(paymentErrorLogUrl, errorLog, ErrorLog.class);
     }
 
     private void logErrorToDatabase(String payment_id, String error, String errorDescription) {
