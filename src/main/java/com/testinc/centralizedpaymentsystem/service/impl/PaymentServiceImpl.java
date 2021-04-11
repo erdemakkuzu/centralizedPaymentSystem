@@ -2,14 +2,21 @@ package com.testinc.centralizedpaymentsystem.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.testinc.centralizedpaymentsystem.constans.PaymentError;
+import com.testinc.centralizedpaymentsystem.dto.ErrorLog;
 import com.testinc.centralizedpaymentsystem.dto.PaymentDTO;
 import com.testinc.centralizedpaymentsystem.entity.Accounts;
+import com.testinc.centralizedpaymentsystem.entity.LogHistory;
 import com.testinc.centralizedpaymentsystem.entity.Payments;
 import com.testinc.centralizedpaymentsystem.repository.AccountsRepository;
+import com.testinc.centralizedpaymentsystem.repository.LogHistoryRepository;
 import com.testinc.centralizedpaymentsystem.repository.PaymentsRepository;
 import com.testinc.centralizedpaymentsystem.service.PaymentService;
 import com.testinc.centralizedpaymentsystem.utils.AppUtils;
+import lombok.extern.log4j.Log4j;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -29,21 +36,33 @@ public class PaymentServiceImpl implements PaymentService {
     @Value("${online.payments.process-size}")
     private Integer onlinePaymentProcessSize;
 
+    @Value("${log.posting.size}")
+    private Integer logPostingSize;
+
     @Value("${payment.api.gateway.url}")
     private String paymentApiGateWayURL;
 
+    @Value("${payment.error.log.url}")
+    private String paymentErrorLogUrl;
+
+    Logger logger = LoggerFactory.getLogger(PaymentServiceImpl.class);
+
+
     PaymentsRepository paymentsRepository;
     AccountsRepository accountsRepository;
+    LogHistoryRepository logHistoryRepository;
     RestTemplate restTemplate;
     ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
     public PaymentServiceImpl(PaymentsRepository paymentsRepository,
                               AccountsRepository accountsRepository,
+                              LogHistoryRepository logHistoryRepository,
                               RestTemplate restTemplate) {
         this.paymentsRepository = paymentsRepository;
         this.accountsRepository = accountsRepository;
         this.restTemplate = restTemplate;
+        this.logHistoryRepository = logHistoryRepository;
 
     }
 
@@ -55,18 +74,36 @@ public class PaymentServiceImpl implements PaymentService {
                 Optional<Accounts> accountById = accountsRepository.findById(paymentDTO.getAccount_id());
 
                 if (!accountById.isPresent()) {
-                    System.out.println("account is not present");
+                    logErrorToDatabase(paymentDTO.getPayment_id(),
+                            PaymentError.ACCOUNT_NOT_FOUND.getError(),
+                            PaymentError.ACCOUNT_NOT_FOUND.getErrorDescription());
                 } else {
                     Payments payments = AppUtils.onlinePaymentDTOToEntity(paymentDTO);
                     payments.setAccounts(accountById.get());
                     paymentsRepository.save(payments);
                 }
 
-
             } catch (JsonProcessingException e) {
-                e.printStackTrace();
+                logger.error(PaymentError.KAFKA_JSON_PARSING_ERROR.getErrorDescription(), e);
             }
         });
+    }
+
+
+
+    private void logErrorToExternalAPI(ErrorLog errorLog, RestTemplate restTemplate) {
+        restTemplate.
+                postForEntity(paymentErrorLogUrl, errorLog, ErrorLog.class);
+    }
+
+    private void logErrorToDatabase(String payment_id, String error, String errorDescription) {
+        LogHistory logHistory = new LogHistory();
+        logHistory.setPaymentId(payment_id);
+        logHistory.setErrorType(error);
+        logHistory.setErrorDescription(errorDescription);
+        logHistory.setPosted(false);
+
+        logHistoryRepository.save(logHistory);
     }
 
     @Override
@@ -77,7 +114,9 @@ public class PaymentServiceImpl implements PaymentService {
                 Optional<Accounts> accountById = accountsRepository.findById(paymentDTO.getAccount_id());
 
                 if (!accountById.isPresent()) {
-                    System.out.println("account is not present");
+                    logErrorToDatabase(paymentDTO.getPayment_id(),
+                            PaymentError.ACCOUNT_NOT_FOUND.getError(),
+                            PaymentError.ACCOUNT_NOT_FOUND.getErrorDescription());
                 } else {
                     Payments payments = AppUtils.offlinePaymentDTOToEntity(paymentDTO);
                     payments.setAccounts(accountById.get());
@@ -85,9 +124,9 @@ public class PaymentServiceImpl implements PaymentService {
                     updateAccountsLastPaymentDate(paymentDTO);
                 }
 
-
             } catch (JsonProcessingException e) {
-                e.printStackTrace();
+                logger.error(PaymentError.KAFKA_JSON_PARSING_ERROR.getErrorDescription(), e);
+
             }
         });
     }
@@ -105,9 +144,39 @@ public class PaymentServiceImpl implements PaymentService {
                 forEach(this::checkPaymentValidation);
     }
 
+    @Override
+    public void postLogs() {
+
+        Pageable firstPageWithGivenElements = PageRequest.of(0, logPostingSize);
+        List<LogHistory> logsToPost = logHistoryRepository.findByPosted(false, firstPageWithGivenElements);
+
+        logsToPost.forEach(logToPost -> {
+            ErrorLog errorLog = AppUtils.logHistoryEntityToDTO(logToPost);
+            postErrorLogToExternalAPI(errorLog, logToPost);
+        });
+
+    }
+
+    private void postErrorLogToExternalAPI(ErrorLog errorLog, LogHistory logHistory) {
+        RestTemplate restTemplate = new RestTemplate();
+        try {
+            ResponseEntity<ErrorLog> response = restTemplate.
+                    postForEntity(paymentErrorLogUrl, errorLog, ErrorLog.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                logHistory.setPosted(true);
+                logHistoryRepository.save(logHistory);
+            } else {
+                logger.error(PaymentError.EXTERNAL_LOG_API_DID_NOT_ACCEPT_REQUEST.getErrorDescription());
+            }
+        } catch (Exception e) {
+            logger.error(PaymentError.EXTERNAL_LOG_API_DID_NOT_ACCEPT_REQUEST.getErrorDescription(), e);
+        }
+
+    }
+
     public void checkPaymentValidation(PaymentDTO paymentDTO) {
         RestTemplate restTemplate = new RestTemplate();
-
         try {
             ResponseEntity<String> response = restTemplate.
                     postForEntity(paymentApiGateWayURL, paymentDTO, String.class);
@@ -116,12 +185,16 @@ public class PaymentServiceImpl implements PaymentService {
                 updateAccountsLastPaymentDate(paymentDTO);
             } else {
                 updateInValidatedPayment(paymentDTO);
-                System.out.println("error");
+                logErrorToDatabase(paymentDTO.getPayment_id(),
+                        PaymentError.UNSUCCESSFUL_HTTP_RESPONSE_FROM_API_GATEWAY.getError(),
+                        PaymentError.UNSUCCESSFUL_HTTP_RESPONSE_FROM_API_GATEWAY.getErrorDescription());
             }
 
         } catch (HttpServerErrorException e) {
-            System.out.println("error log");
             updateInValidatedPayment(paymentDTO);
+            logErrorToDatabase(paymentDTO.getPayment_id(),
+                    PaymentError.TIMEOUT_API_GATEWAY.getError(),
+                    PaymentError.TIMEOUT_API_GATEWAY.getErrorDescription());
         }
 
     }

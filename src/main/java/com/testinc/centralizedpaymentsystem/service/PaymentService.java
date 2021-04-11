@@ -10,4 +10,6 @@ public interface PaymentService {
     void saveOfflinePayments(ConsumerRecords<String, String> consumerRecords);
 
     void processOnlinePayments();
+
+    void postLogs();
 }

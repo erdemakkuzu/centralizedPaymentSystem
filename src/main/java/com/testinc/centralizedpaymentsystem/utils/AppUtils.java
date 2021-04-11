@@ -1,6 +1,8 @@
 package com.testinc.centralizedpaymentsystem.utils;
 
+import com.testinc.centralizedpaymentsystem.dto.ErrorLog;
 import com.testinc.centralizedpaymentsystem.dto.PaymentDTO;
+import com.testinc.centralizedpaymentsystem.entity.LogHistory;
 import com.testinc.centralizedpaymentsystem.entity.Payments;
 
 import java.sql.Timestamp;
@@ -49,5 +51,13 @@ public class AppUtils {
         return payments;
 
 
+    }
+
+    public static ErrorLog logHistoryEntityToDTO(LogHistory logHistory) {
+        ErrorLog errorLog = new ErrorLog(logHistory.getPaymentId(),
+                logHistory.getErrorType(),
+                logHistory.getErrorDescription());
+
+        return errorLog;
     }
 }
