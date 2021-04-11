@@ -3,7 +3,7 @@ package com.testinc.centralizedpaymentsystem.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.testinc.centralizedpaymentsystem.constans.PaymentError;
-import com.testinc.centralizedpaymentsystem.dto.ErrorLog;
+import com.testinc.centralizedpaymentsystem.dto.ErrorLogDTO;
 import com.testinc.centralizedpaymentsystem.dto.PaymentDTO;
 import com.testinc.centralizedpaymentsystem.entity.Accounts;
 import com.testinc.centralizedpaymentsystem.entity.LogHistory;
@@ -149,17 +149,17 @@ public class PaymentServiceImpl implements PaymentService {
         List<LogHistory> logsToPost = logHistoryRepository.findByPosted(false, firstPageWithGivenElements);
 
         logsToPost.forEach(logToPost -> {
-            ErrorLog errorLog = AppUtils.logHistoryEntityToDTO(logToPost);
-            postErrorLogToExternalAPI(errorLog, logToPost);
+            ErrorLogDTO errorLogDTO = AppUtils.logHistoryEntityToDTO(logToPost);
+            postErrorLogToExternalAPI(errorLogDTO, logToPost);
         });
 
     }
 
-    private void postErrorLogToExternalAPI(ErrorLog errorLog, LogHistory logHistory) {
+    private void postErrorLogToExternalAPI(ErrorLogDTO errorLogDTO, LogHistory logHistory) {
         RestTemplate restTemplate = new RestTemplate();
         try {
-            ResponseEntity<ErrorLog> response = restTemplate.
-                    postForEntity(paymentErrorLogUrl, errorLog, ErrorLog.class);
+            ResponseEntity<ErrorLogDTO> response = restTemplate.
+                    postForEntity(paymentErrorLogUrl, errorLogDTO, ErrorLogDTO.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 logHistory.setPosted(true);

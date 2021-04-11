@@ -31,10 +31,8 @@ public class OfflinePaymentConsumer extends PaymentConsumer{
                 consumer.poll(consumerConfiguration.getConsumerReadingTimeOut());
 
         paymentService.saveOfflinePayments(consumerRecords);
-
         consumer.commitAsync();
-
         consumer.close();
-        System.out.println("DONE");
+
     }
 }

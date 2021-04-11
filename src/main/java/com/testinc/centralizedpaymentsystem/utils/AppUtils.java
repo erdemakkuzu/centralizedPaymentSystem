@@ -1,6 +1,6 @@
 package com.testinc.centralizedpaymentsystem.utils;
 
-import com.testinc.centralizedpaymentsystem.dto.ErrorLog;
+import com.testinc.centralizedpaymentsystem.dto.ErrorLogDTO;
 import com.testinc.centralizedpaymentsystem.dto.PaymentDTO;
 import com.testinc.centralizedpaymentsystem.entity.LogHistory;
 import com.testinc.centralizedpaymentsystem.entity.Payments;
@@ -9,7 +9,7 @@ import java.sql.Timestamp;
 
 public class AppUtils {
 
-    public static Payments onlinePaymentDTOToEntity(PaymentDTO paymentDTO){
+    public static Payments onlinePaymentDTOToEntity(PaymentDTO paymentDTO) {
         Payments payments = new Payments();
         payments.setPaymentId(paymentDTO.getPayment_id());
         payments.setPaymentType(paymentDTO.getPayment_type());
@@ -23,7 +23,7 @@ public class AppUtils {
         return payments;
     }
 
-    public static PaymentDTO paymentEntityToDTO(Payments payments){
+    public static PaymentDTO paymentEntityToDTO(Payments payments) {
 
         PaymentDTO paymentDTO = new PaymentDTO();
         paymentDTO.setPayment_id(payments.getPaymentId());
@@ -53,11 +53,10 @@ public class AppUtils {
 
     }
 
-    public static ErrorLog logHistoryEntityToDTO(LogHistory logHistory) {
-        ErrorLog errorLog = new ErrorLog(logHistory.getPaymentId(),
+    public static ErrorLogDTO logHistoryEntityToDTO(LogHistory logHistory) {
+
+        return new ErrorLogDTO(logHistory.getPaymentId(),
                 logHistory.getErrorType(),
                 logHistory.getErrorDescription());
-
-        return errorLog;
     }
 }

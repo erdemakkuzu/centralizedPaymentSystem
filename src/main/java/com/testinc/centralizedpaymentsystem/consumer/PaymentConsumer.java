@@ -40,8 +40,6 @@ public abstract class PaymentConsumer {
 
         return kafkaConsumer;
     }
-
-
     public abstract void runConsumer();
 
 }

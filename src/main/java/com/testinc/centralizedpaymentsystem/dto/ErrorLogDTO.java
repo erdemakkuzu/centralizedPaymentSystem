@@ -3,7 +3,7 @@ package com.testinc.centralizedpaymentsystem.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 
-public class ErrorLog {
+public class ErrorLogDTO {
     @JsonProperty("payment_id")
     private String payment_id;
 
@@ -13,13 +13,10 @@ public class ErrorLog {
     @JsonProperty("error_description")
     private String error_description;
 
-    public ErrorLog() {
+    public ErrorLogDTO() {
 
     }
-
-
-
-    public ErrorLog(String payment_id, String error, String error_description) {
+    public ErrorLogDTO(String payment_id, String error, String error_description) {
         this.payment_id = payment_id;
         this.error = error;
         this.error_description = error_description;

@@ -32,39 +32,20 @@ public class ConsumerConfiguration {
         return topicNameForOnlinePayments;
     }
 
-    public void setTopicNameForOnlinePayments(String topicNameForOnlinePayments) {
-        this.topicNameForOnlinePayments = topicNameForOnlinePayments;
-    }
-
     public String getTopicNameForOfflinePayments() {
         return topicNameForOfflinePayments;
-    }
-
-    public void setTopicNameForOfflinePayments(String topicNameForOfflinePayments) {
-        this.topicNameForOfflinePayments = topicNameForOfflinePayments;
     }
 
     public String getKafkaProducerHost() {
         return kafkaProducerHost;
     }
 
-    public void setKafkaProducerHost(String kafkaProducerHost) {
-        this.kafkaProducerHost = kafkaProducerHost;
-    }
-
     public String getKafkaConsumerGroupName() {
         return kafkaConsumerGroupName;
-    }
-
-    public void setKafkaConsumerGroupName(String kafkaConsumerGroupName) {
-        this.kafkaConsumerGroupName = kafkaConsumerGroupName;
     }
 
     public long getConsumerReadingTimeOut() {
         return consumerReadingTimeOut;
     }
 
-    public void setConsumerReadingTimeOut(long consumerReadingTimeOut) {
-        this.consumerReadingTimeOut = consumerReadingTimeOut;
-    }
 }

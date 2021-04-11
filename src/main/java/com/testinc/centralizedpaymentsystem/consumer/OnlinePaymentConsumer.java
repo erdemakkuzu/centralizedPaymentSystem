@@ -19,7 +19,6 @@ public class OnlinePaymentConsumer extends PaymentConsumer {
         this.paymentService=paymentService;
     }
 
-
     @Override
     public void runConsumer() {
         this.consumer = createConsumer(consumerConfiguration.getTopicNameForOnlinePayments(),
@@ -32,12 +31,7 @@ public class OnlinePaymentConsumer extends PaymentConsumer {
                 consumer.poll(consumerConfiguration.getConsumerReadingTimeOut());
 
         paymentService.saveUnProcessedOnlinePayments(consumerRecords);
-
         consumer.commitAsync();
-
         consumer.close();
-        System.out.println("DONE");
-
     }
-
 }
