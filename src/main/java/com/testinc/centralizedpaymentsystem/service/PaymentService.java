@@ -8,4 +8,6 @@ public interface PaymentService {
     void saveUnProcessedOnlinePayments(ConsumerRecords<String, String> consumerRecords);
 
     void saveOfflinePayments(ConsumerRecords<String, String> consumerRecords);
+
+    void processOnlinePayments();
 }
