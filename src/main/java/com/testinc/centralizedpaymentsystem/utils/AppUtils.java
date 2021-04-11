@@ -19,7 +19,6 @@ public class AppUtils {
         payments.setCreditCard(paymentDTO.getCredit_card());
         payments.setCreatedOn(new Timestamp(System.currentTimeMillis()));
 
-
         return payments;
     }
 
@@ -37,7 +36,6 @@ public class AppUtils {
 
     }
 
-
     public static Payments offlinePaymentDTOToEntity(PaymentDTO paymentDTO) {
         Payments payments = new Payments();
         payments.setPaymentId(paymentDTO.getPayment_id());
@@ -49,8 +47,6 @@ public class AppUtils {
         payments.setCreatedOn(new Timestamp(System.currentTimeMillis()));
 
         return payments;
-
-
     }
 
     public static ErrorLogDTO logHistoryEntityToDTO(LogHistory logHistory) {
