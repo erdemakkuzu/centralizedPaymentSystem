@@ -69,7 +69,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public void saveUnProcessedOnlinePayments(ConsumerRecords<String, String> consumerRecords) {
 
-        for(ConsumerRecord<String,String> record : consumerRecords){
+        for (ConsumerRecord<String, String> record : consumerRecords) {
             try {
                 PaymentDTO paymentDTO = mapper.readValue(record.value(), PaymentDTO.class);
                 Optional<Accounts> accountById = accountsRepository.findById(paymentDTO.getAccount_id());
@@ -146,7 +146,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public void postLogs() {
-
         Pageable firstPageWithGivenElements = PageRequest.of(0, logPostingSize);
         List<LogHistory> logsToPost = logHistoryRepository.findByPosted(false, firstPageWithGivenElements);
 
@@ -158,7 +157,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private void postErrorLogToExternalAPI(ErrorLogDTO errorLogDTO, LogHistory logHistory) {
-        RestTemplate restTemplate = new RestTemplate();
+
         try {
             ResponseEntity<ErrorLogDTO> response = restTemplate.
                     postForEntity(paymentErrorLogUrl, errorLogDTO, ErrorLogDTO.class);
@@ -176,7 +175,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     public void checkPaymentValidation(PaymentDTO paymentDTO) {
-        RestTemplate restTemplate = new RestTemplate();
+
         try {
             ResponseEntity<String> response = restTemplate.
                     postForEntity(paymentApiGateWayURL, paymentDTO, String.class);
