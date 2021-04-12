@@ -173,8 +173,6 @@ class PaymentServiceImplTest {
 
         verify(logHistoryRepositoryMock).save(argument.capture());
         assertEquals(argument.getValue().getErrorDescription(), (PaymentError.UNSUCCESSFUL_HTTP_RESPONSE_FROM_API_GATEWAY.getErrorDescription()));
-
-
     }
 
     @Test
@@ -212,10 +210,6 @@ class PaymentServiceImplTest {
 
         verify(accountsRepositoryMock, times(1)).save(any());
         verify(paymentsRepositoryMock, times(1)).save(any());
-
-
     }
-
-
 }
 
