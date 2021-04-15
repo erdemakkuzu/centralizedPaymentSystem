@@ -29,6 +29,7 @@
    
    
   2) For online payments:
+
    The application stores the online payment with the values ​​of processed = false and valid = false.
    Before storing there are 2 checks;
    1) Is there an account with a given account id? If yes, it passes the check. If no, an error log will be stored in the log_history table.
